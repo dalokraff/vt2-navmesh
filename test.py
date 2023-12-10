@@ -1,3 +1,7 @@
+"""
+Probably need to turn this into unittests instead of a scratchpad.
+Depends on how expansive the main app becomes.
+"""
 import matplotlib.pyplot as plt
 import numpy as np
 import triangle as tr
