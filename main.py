@@ -19,6 +19,16 @@ async def root():
 # table_template = f''' local traingle_table = {{  }}'''
 # point_table_template = f'{{{x},{y},{z}}},'
 def format_triangles_to_lua_table(triangulation_data, hieght: float|int):
+    '''
+    Turns the triangle simplices into their coresponding 3-D points. Then turns those points
+    into a string representing a lua table of the triangles' points; to be used in `loadstring()`
+
+    `return {
+        {1,2,3},
+        {2,3,4},
+        {3,4,1}
+    }`
+    '''
     triangles = triangulation_data['triangles'].tolist()
     point_arr = triangulation_data['vertices'].tolist()
     tris = ''
@@ -63,7 +73,14 @@ def format_vector_str_list(list_of_vectors_as_str: [str]):
 
 @app.post("/traingle/")
 async def save_triangle(lua_data: Request):    
-
+    '''
+    The recieved data is assumed to be a string that containes 3 distinct data types.
+        An array of 3-D points representing the nodes of the mesh to be triangluated.
+        An array of 2-D points representing line segments of the aforementioned 3-D points,
+            denoting the boundry regions of the mesh
+        An array of 3-D points used to denote which of the aforementioned boundry regions
+            are "holes". 
+    '''
     
     mesh_data = await lua_data.body()
     mesh_str = mesh_data.decode('utf-8')
@@ -108,6 +125,7 @@ async def save_triangle(lua_data: Request):
     print(segements)
     print(hole_arr)
 
+    #this where the actual triangualtion happens
     tri_data = {'vertices':point_arr, 'segments': rounded_segements, 'holes':hole_arr}
     triangulation_data = tr.triangulate(tri_data, 'p')
 
