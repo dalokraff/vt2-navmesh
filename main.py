@@ -18,12 +18,15 @@ async def root():
 
 # table_template = f''' local traingle_table = {{  }}'''
 # point_table_template = f'{{{x},{y},{z}}},'
-def format_triangles_to_lua_table(triangles: np.ndarray, hieght_dict: dict):
+def format_triangles_to_lua_table(triangulation_data, hieght: float|int):
+    triangles = triangulation_data['triangles'].tolist()
+    point_arr = triangulation_data['vertices'].tolist()
     tris = ''
     for tri in triangles:
+        print(tuple(tri))
         points = []
-        for point in tri:
-            hieght = hieght_dict[tuple(point)]
+        for point_index in tri:
+            point = point_arr[point_index]
             point_table_template = f'{{ {point[0]}, {point[1]}, {hieght} }},'
             points.append(point_table_template)
         triangle_table_template = f'{{ {points[0]} {points[1]} {points[2]} }},'
@@ -33,35 +36,83 @@ def format_triangles_to_lua_table(triangles: np.ndarray, hieght_dict: dict):
     lua_string = "return {" + tris + "}"
     return lua_string
 
-@app.post("/traingle/")
-async def save_triangle(triangle: Request):
-    body = await triangle.body()
-    body_str = body.decode('utf-8')
-    vec_strs = body_str.replace(')', '').split('Vector3(')
-    vec_strs.pop(0) #leading "Vector3(" gives an empty string
+def convert_vector_str(vector_str: str, dim:int):
+    '''
+    "Vector3(x,y,z)Vector3(x,y,z)Vector3(x,y,z)" -> ["x,y,z", "x,y,z", "x,y,z"]
+    '''
+    list_of_vectors_as_str = vector_str.replace(')', '').split(f'Vector{dim}(')
+    list_of_vectors_as_str.pop(0) #leading "Vector3(" gives an empty string
+    return list_of_vectors_as_str
 
+def format_vector_str_list(list_of_vectors_as_str: [str]):
+    '''
+    ["x,y,z", "x,y,z", "x,y,z"] -> 
+            np.array([x,y],[x,y],[x,y]) , avg(z, z, z)
+    '''
     vec_list = []
     og_hieght_dict = {}
-    for vec in vec_strs:
+    hieght_total = 0
+    for vec in list_of_vectors_as_str:
         new_vec = np.fromstring(vec, dtype=float, sep=', ')
         vec_list.append(new_vec[:2])
-        og_hieght_dict[tuple(new_vec[:2])] = new_vec[2]
+        hieght_total += new_vec[2]
     vec_arr = np.array(vec_list)
-    tri = Delaunay(vec_arr)
-    triangles = vec_arr[tri.simplices]
+    avg_hieght = hieght_total/(len(vec_list)+0.00001)
 
-    # for tri1 in triangles:
-    #     for point in tri1:
-    #         hieght = og_hieght_dict[tuple(point)]
-    #         print(str(point[0],point[1], hieght))
+    return vec_arr, avg_hieght
 
+@app.post("/traingle/")
+async def save_triangle(lua_data: Request):    
 
+    
+    mesh_data = await lua_data.body()
+    mesh_str = mesh_data.decode('utf-8')
+    
+    #find mesh points'/vertices' string
+    points_start = mesh_str.find('$b') + 1
+    points_end = mesh_str.find('$e')
+    if points_end < 0:
+        points_end = 0
+    point_str = mesh_str[points_start:points_end]
 
-    # print(og_hieght_dict)
-    # print(vec_strs)
-    # print(triangles)
+    #find mesh boundries' string
+    boundry_start = mesh_str.find('&b') + 1
+    boundry_end = mesh_str.find('&e')
+    if boundry_end < 0:
+        boundry_end = 0
+    boundry_str = mesh_str[boundry_start:boundry_end]
 
-    lua_table = format_triangles_to_lua_table(triangles, og_hieght_dict)
-    print(lua_table)
+    #find holes' string
+    hole_start = mesh_str.find('^b') + 1
+    hole_end = mesh_str.find('^e')
+    if hole_end < 0:
+        hole_end = 0
+    hole_str = mesh_str[hole_start:hole_end]
+
+    #format mesh points' string into numpy array
+    list_of_points_as_str = convert_vector_str(point_str, 3)
+    point_arr,new_hiegth = format_vector_str_list(list_of_points_as_str)
+
+    #format boundries' string into numpy array
+    list_boundry_lines_as_str = convert_vector_str(boundry_str, 3)
+    segements,_ = format_vector_str_list(list_boundry_lines_as_str)
+    if segements.size < 0:
+        segements = tr.convex_hull(point_arr)
+    rounded_segements = (np.round(segements)).astype(int)
+
+    #format holes' string into numpy array
+    list_of_holes_as_str = convert_vector_str(hole_str, 3)
+    hole_arr,_ = format_vector_str_list(list_of_holes_as_str)
+
+    print(point_arr)
+    print(segements)
+    print(hole_arr)
+
+    tri_data = {'vertices':point_arr, 'segments': rounded_segements, 'holes':hole_arr}
+    triangulation_data = tr.triangulate(tri_data, 'p')
+
+    print(triangulation_data)
+
+    lua_table = format_triangles_to_lua_table(triangulation_data, new_hiegth)
 
     return lua_table
