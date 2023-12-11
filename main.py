@@ -8,6 +8,7 @@ import matplotlib.tri as mtri
 from scipy.spatial import Delaunay
 import requests
 import triangle as tr
+import json
 
 app = FastAPI()
 
@@ -15,36 +16,6 @@ app = FastAPI()
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
-
-# table_template = f''' local traingle_table = {{  }}'''
-# point_table_template = f'{{{x},{y},{z}}},'
-def format_triangles_to_lua_table(triangulation_data, hieght: float|int):
-    '''
-    Turns the triangle simplices into their coresponding 3-D points. Then turns those points
-    into a string representing a lua table of the triangles' points; to be used in `loadstring()`
-
-    `return {
-        {1,2,3},
-        {2,3,4},
-        {3,4,1}
-    }`
-    '''
-    triangles = triangulation_data['triangles'].tolist()
-    point_arr = triangulation_data['vertices'].tolist()
-    tris = ''
-    for tri in triangles:
-        print(tuple(tri))
-        points = []
-        for point_index in tri:
-            point = point_arr[point_index]
-            point_table_template = f'{{ {point[0]}, {point[1]}, {hieght} }},'
-            points.append(point_table_template)
-        triangle_table_template = f'{{ {points[0]} {points[1]} {points[2]} }},'
-        print(triangle_table_template)
-        tris = tris + triangle_table_template
-
-    lua_string = "return {" + tris + "}"
-    return lua_string
 
 def convert_vector_str(vector_str: str, dim:int):
     '''
@@ -83,54 +54,34 @@ async def save_triangle(lua_data: Request):
     '''
     
     mesh_data = await lua_data.body()
+
     mesh_str = mesh_data.decode('utf-8')
+    lua_tri_data = json.loads(mesh_str)
+    tri_data = {
+        'vertices': np.delete(lua_tri_data['vertices'], 2, 1),
+        'holes': np.delete(lua_tri_data['holes'], 2, 1),
+        'segments': lua_tri_data['segments']
+    }
+
+    vertex_arr = np.array(lua_tri_data['vertices'])
     
-    #find mesh points'/vertices' string
-    points_start = mesh_str.find('$b') + 1
-    points_end = mesh_str.find('$e')
-    if points_end < 0:
-        points_end = 0
-    point_str = mesh_str[points_start:points_end]
-
-    #find mesh boundries' string
-    boundry_start = mesh_str.find('&b') + 1
-    boundry_end = mesh_str.find('&e')
-    if boundry_end < 0:
-        boundry_end = 0
-    boundry_str = mesh_str[boundry_start:boundry_end]
-
-    #find holes' string
-    hole_start = mesh_str.find('^b') + 1
-    hole_end = mesh_str.find('^e')
-    if hole_end < 0:
-        hole_end = 0
-    hole_str = mesh_str[hole_start:hole_end]
-
-    #format mesh points' string into numpy array
-    list_of_points_as_str = convert_vector_str(point_str, 3)
-    point_arr,new_hiegth = format_vector_str_list(list_of_points_as_str)
-
-    #format boundries' string into numpy array
-    list_boundry_lines_as_str = convert_vector_str(boundry_str, 3)
-    segements,_ = format_vector_str_list(list_boundry_lines_as_str)
-    if segements.size < 0:
-        segements = tr.convex_hull(point_arr)
-    rounded_segements = (np.round(segements)).astype(int)
-
-    #format holes' string into numpy array
-    list_of_holes_as_str = convert_vector_str(hole_str, 3)
-    hole_arr,_ = format_vector_str_list(list_of_holes_as_str)
-
-    print(point_arr)
-    print(segements)
-    print(hole_arr)
-
-    #this where the actual triangualtion happens
-    tri_data = {'vertices':point_arr, 'segments': rounded_segements, 'holes':hole_arr}
     triangulation_data = tr.triangulate(tri_data, 'p')
 
     print(triangulation_data)
 
-    lua_table = format_triangles_to_lua_table(triangulation_data, new_hiegth)
+    triangles = triangulation_data['triangles'].tolist()
+    point_arr = triangulation_data['vertices'].tolist()
+    return_data = []
+    for tri in triangles:
+        triang = []
+        for point_index in tri:
+            point = point_arr[point_index]
+            hieght = np.mean(vertex_arr[:, 2])
+            point_with_hieght = np.append(point, hieght).tolist()
+            triang.append(point_with_hieght)
+        return_data.append(triang)
+        
+        
+    print(return_data)
 
-    return lua_table
+    return return_data
