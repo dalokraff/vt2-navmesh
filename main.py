@@ -9,7 +9,9 @@ from scipy.spatial import Delaunay
 import requests
 import triangle as tr
 import json
+import sqlite3
 
+connection = sqlite3.connect("meshes.db")
 app = FastAPI()
 
 
@@ -17,30 +19,8 @@ app = FastAPI()
 async def root():
     return {"message": "Hello World"}
 
-def convert_vector_str(vector_str: str, dim:int):
-    '''
-    "Vector3(x,y,z)Vector3(x,y,z)Vector3(x,y,z)" -> ["x,y,z", "x,y,z", "x,y,z"]
-    '''
-    list_of_vectors_as_str = vector_str.replace(')', '').split(f'Vector{dim}(')
-    list_of_vectors_as_str.pop(0) #leading "Vector3(" gives an empty string
-    return list_of_vectors_as_str
-
-def format_vector_str_list(list_of_vectors_as_str: [str]):
-    '''
-    ["x,y,z", "x,y,z", "x,y,z"] -> 
-            np.array([x,y],[x,y],[x,y]) , avg(z, z, z)
-    '''
-    vec_list = []
-    og_hieght_dict = {}
-    hieght_total = 0
-    for vec in list_of_vectors_as_str:
-        new_vec = np.fromstring(vec, dtype=float, sep=', ')
-        vec_list.append(new_vec[:2])
-        hieght_total += new_vec[2]
-    vec_arr = np.array(vec_list)
-    avg_hieght = hieght_total/(len(vec_list)+0.00001)
-
-    return vec_arr, avg_hieght
+def vector_to_hieght_dict(hieght_dict: dict, three_vec):
+    hieght_dict[three_vec[:2]] = three_vec[2]
 
 @app.post("/traingle/")
 async def save_triangle(lua_data: Request):    
@@ -64,6 +44,17 @@ async def save_triangle(lua_data: Request):
     }
 
     vertex_arr = np.array(lua_tri_data['vertices'])
+    print(vertex_arr)
+
+    print(vertex_arr.shape)
+    
+
+    points_tuple = tuple(tuple(point) for point in vertex_arr.transpose()[:2].transpose())
+    print(points_tuple)
+    hieght_vals = np.round(vertex_arr.transpose()[2], decimals=2)
+    hieght_dict = dict(zip(points_tuple, hieght_vals))
+
+    print(hieght_dict)
     
     triangulation_data = tr.triangulate(tri_data, 'p')
 
@@ -76,7 +67,7 @@ async def save_triangle(lua_data: Request):
         triang = []
         for point_index in tri:
             point = point_arr[point_index]
-            hieght = np.mean(vertex_arr[:, 2])
+            hieght = hieght_dict[(point[0], point[1])]
             point_with_hieght = np.append(point, hieght).tolist()
             triang.append(point_with_hieght)
         return_data.append(triang)
