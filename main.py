@@ -14,6 +14,9 @@ import sqlite3
 connection = sqlite3.connect("meshes.db")
 app = FastAPI()
 
+# For joining meshes, looking for the 4, 3D points that minimize the area of the bounded square plane between these points.
+# look at the nearest neighbor for each point in mesh on check if the all pairs of points in mesh two for the area of the bounded plane formed by them
+# Will need to come up with some filtering to reduce O(n) order.
 
 @app.get("/")
 async def root():
