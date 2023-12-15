@@ -35,22 +35,6 @@ class User(UserBase):
         orm_mode = True
 
 ########################################################
-class PointBase(BaseModel):
-    x: float|int
-    y: float|int
-    z: float|int
-    is_hole: bool
-    is_boundry: bool
-    triangle_id: int
-    level_id: int
-
-class PointCreate(PointBase):
-    pass
-
-class Point(PointBase):
-    id: int
-    class Config:
-        orm_mode = True
 
 class TriangleBase(BaseModel):
     # one: Point
@@ -71,10 +55,6 @@ class Triangle(TriangleBase):
         orm_mode = True
 
 class MeshBase(BaseModel):
-    triangles: list[Triangle]
-    points: list[Point]
-    holes: list[Point]
-    boundry: list[Point]
     level_id: int
 
 class MeshCreate(MeshBase):

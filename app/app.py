@@ -12,22 +12,19 @@ import triangle as tr
 import json
 import sqlite3
 
+from app.utils import converters
+from app.utils.dependacny import get_db
+
 from . import resources, models, schemas
 from app.database import SessionLocal, engine
+
+from .points import resources as point_route
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-
-# Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
+app.include_router(point_route.router)
 
 @app.post("/users/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -68,31 +65,14 @@ def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 async def root():
     return {"message": "Hello World"}
 
-@app.get("/point/", response_model=list[schemas.Point])
-def create_point(point: schemas.PointCreate, db: Session=Depends(get_db)):
-    point = resources.create_point(db, point=point)
-    return point
 
-@app.post("/point/create/", response_model=schemas.Point)
-def create_point(point: schemas.PointCreate, db: Session=Depends(get_db)):
-    point = resources.create_point(db, point=point)
-    return point
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@app.post("/mesh/cjson/{level_id}")
+async def create_mesh_from_cjson(lua_data: Request, level_id: int):
+    mesh_data = await lua_data.body()
+    mesh_str = mesh_data.decode('utf-8')
+    #this mnavmesh json needs to be parsed and have it's triangles and points added to the database
+    navmesh_json = converters.mesh_from_cjson(mesh_str)
+    return navmesh_json
 
 # navmesh calculations
 def vector_to_hieght_dict(hieght_dict: dict, three_vec):

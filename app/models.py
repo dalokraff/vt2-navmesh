@@ -25,18 +25,6 @@ class Item(Base):
 
     owner = relationship("User", back_populates="items")
 
-class Point(Base):
-    __tablename__ = "points"
-
-    id = Column(Integer, primary_key=True, index=True)
-    x = Column(Float, index=True)
-    y = Column(Float, index=True)
-    z = Column(Float, index=True)
-    is_hole = Column(Boolean, index=True)
-    is_boundry = Column(Boolean, index=True)
-    triangle_id  = Column(Integer, ForeignKey("triangles.id"))
-    level_id = Column(Integer, index=True)
-
 class Triangle(Base):
     __tablename__ = "triangles"
 
@@ -48,9 +36,13 @@ class Triangle(Base):
     point_three_id = Column(Integer, ForeignKey("points.id"))
 
 class Mesh(Base):
+    """
+    Used to associate a group of triangles that were created together
+    """
     __tablename__ = "meshes"
 
     id = Column(Integer, primary_key=True, index=True)
+    level_id = Column(Integer, ForeignKey("levels.id"))
 
 
 class Level(Base):
