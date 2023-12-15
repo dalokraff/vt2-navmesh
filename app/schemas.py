@@ -36,24 +36,6 @@ class User(UserBase):
 
 ########################################################
 
-class TriangleBase(BaseModel):
-    # one: Point
-    # two: Point
-    # three: Point
-    mesh_id: int
-    level_id: int
-
-class TriangleCreate(TriangleBase):
-    pass
-
-class Triangle(TriangleBase):
-    id: int
-    point_one_id: int
-    point_two_id: int
-    point_three_id: int
-    class Config:
-        orm_mode = True
-
 class MeshBase(BaseModel):
     level_id: int
 

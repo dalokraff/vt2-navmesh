@@ -18,12 +18,15 @@ from app.utils.dependacny import get_db
 from . import resources, models, schemas
 from app.database import SessionLocal, engine
 
+from .triangles import resources as tri_route
 from .points import resources as point_route
+
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+app.include_router(tri_route.router)
 app.include_router(point_route.router)
 
 @app.post("/users/", response_model=schemas.User)
