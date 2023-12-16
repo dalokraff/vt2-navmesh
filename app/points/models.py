@@ -48,6 +48,13 @@ class Point(Base):
         db.refresh(self)
 
         return self
+    
+    def pnt_copy(self, db):
+        copy_def = PointCreate(x=self.x, y=self.y, z=self.z, is_boundry=self.is_boundry, is_hole=self.is_hole)
+        copy_pnt = Point(copy_def, level_id=self.level_id)
+        copy_pnt.save(db)
+
+        return copy_pnt
 
     def vector(self):
         vec = np.array([self.x, self.y, self.z])
@@ -61,7 +68,7 @@ class Point(Base):
                 new_result = []
                 for point in result:
                     new_result.append(point.vector())
-                result = new_result
+                result = np.unique(new_result, axis=0)
             return result
         
         return vectorize

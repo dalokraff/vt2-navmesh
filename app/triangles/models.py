@@ -27,16 +27,8 @@ class Triangle(Base):
         self.mesh_id = tri_info.mesh_id
         self.level_id = tri_info.level_id
         # required to initalize the Points
-        self.point_json = tri_info.points
-
-    def save(self, db: Session):
-        """save triangle object to db"""
-        db.add(self)
-        db.commit()
-        db.refresh(self)
-
-        # iterate over pointCreate objects to initialize and associate them with this triangle 
-        for point_obj in self.point_json:
+        # self.point_json = tri_info.points
+        for point_obj in tri_info.points:
             print(point_obj)
             print(*point_obj)
             point_init = PointCreate(
@@ -52,10 +44,33 @@ class Triangle(Base):
                 mesh_id= self.mesh_id,
                 triangle_id= self.id
                 )
-            point.save(db)
+            # point.save(db)
             self.points.append(point)
 
+    def save(self, db: Session):
+        """save triangle object to db"""
+        db.add(self)
+        db.commit()
+        db.refresh(self)
+
+        # iterate over pointCreate objects to initialize and associate them with this triangle
+        for point in self.points:
+            point.save(db)
+
         return self
+    
+    def tri_copy(self, db):
+        new_pnts = []
+        for point in self.points:
+            new_pnt_def = PointCreate(x=point.x, y=point.y, z=point.z, is_boundry=point.is_boundry, is_hole=point.is_hole)
+            new_pnts.append(new_pnt_def)
+            
+        copy_def = TriangleCreate(mesh_id=self.mesh_id, level_id=self.level_id, points=new_pnts)
+        copy_tri = Triangle(copy_def)
+        copy_tri.save(db)
+
+        return copy_tri
+
     
     @staticmethod
     def find_triangle_by_id(triangle_id):
