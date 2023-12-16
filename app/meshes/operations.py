@@ -2,7 +2,7 @@ import numpy as np
 import triangle as tr
 from sqlalchemy.orm import Session
 
-from app.meshes.schemas import LuaMeshRespone
+from app.meshes.schemas import LuaMeshRespone, Mesh as Mesh_Schema
 from app.triangles.models import Triangle
 from app.triangles.schemas import TriangleCreate
 from .models import Mesh
@@ -37,7 +37,6 @@ def triangulate_and_save_results(tri_dict, db: Session):
 
     triangles = triangulation_data['triangles'].tolist()
     point_arr = triangulation_data['vertices'].tolist()
-    return_data = []
 
     point_dict_keys = ['x', 'y', 'z']
     triangle_list = []
@@ -70,3 +69,7 @@ def triangulate_and_save_results(tri_dict, db: Session):
     resp = LuaMeshRespone(num_triangels=len(triangle_list), mesh_id=mesh_obj.id)
 
     return resp, mesh_obj
+
+
+def interpolate_meshes(mesh_one: Mesh_Schema, mesh_two: Mesh_Schema):
+    return

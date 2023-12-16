@@ -66,18 +66,32 @@ async def gen_mesh_ingame(lua_data: Request, db: Session=Depends(get_db)):
 
 
 @router.get("/concat/", response_model=MeshSchema)
-async def concat_meshes(start:int , stop: int, db: Session=Depends(get_db)):
+async def concat_meshes(start_id:int , end_id: int, db: Session=Depends(get_db)):
     """
     Merges the triangles from Mesh 1 and Mesh 2.\n
     NOTE: Does not connect the triangle vertices!!!
     """
-    if start == stop:
-        msg = f'Can not combine mesh {start} with itself!'
+    if start_id == end_id:
+        msg = f'Can not combine mesh {start_id} with itself!'
         return PlainTextResponse(msg, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    start_mesh = Mesh.get_mesh_by_id(start, db)
-    stop_mesh = Mesh.get_mesh_by_id(stop, db)
+    start_mesh = Mesh.get_mesh_by_id(start_id, db)
+    stop_mesh = Mesh.get_mesh_by_id(end_id, db)
 
     new_mesh = Mesh.concat_meshes(start_mesh, stop_mesh, db)
+
+    return new_mesh
+
+@router.get("/merge/", response_model=MeshSchema)
+async def merge_meshes(start_id: int, end_id: int, db: Session=Depends(get_db)):
+
+    if start_id == end_id:
+        msg = f'Can not combine mesh {start_id} with itself!'
+        return PlainTextResponse(msg, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    start_mesh = Mesh.get_mesh_by_id(start_id, db)
+    stop_mesh = Mesh.get_mesh_by_id(end_id, db)
+
+    new_mesh = Mesh.merge_meshes(start_mesh, stop_mesh, db)
 
     return new_mesh
