@@ -1,5 +1,6 @@
 import json
 from fastapi import APIRouter, Depends, Request
+from typing import Union
 import numpy as np
 from sqlalchemy.orm import Session
 import triangle as tr
@@ -8,7 +9,7 @@ from app.utils.dependacny import get_db
 from app.triangles.models import Triangle
 from app.triangles.schemas import TriangleCreate
 from .models import Mesh
-from .schemas import Mesh as MeshSchema, MeshCreate
+from .schemas import LuaMeshRespone, Mesh as MeshSchema, MeshCreate, LuaMeshGrid
 
 router = APIRouter(
     prefix="/meshes",
@@ -20,42 +21,18 @@ def get_meshes(db: Session=Depends(get_db)):
     """get meshes"""
     return 'mesh'
 
-# @router.post("/triangulate_mesh/", response_model=tri_schema)
-# def create_triangle(tri_info: TriangleCreate, db: Session=Depends(get_db)):
-#     """
-#     endpoint to create mesh from lua data
-#     """
-#     tri = Triangle(tri_info)
-#     tri.save(db)
-#     return tri
-
-
-# navmesh calculations
+# navmesh calculation functions
 def vector_to_hieght_dict(hieght_dict: dict, three_vec):
     hieght_dict[three_vec[:2]] = three_vec[2]
 
-@router.post("/triangulate_mesh/")
-async def save_triangle(lua_data: Request, db: Session=Depends(get_db)):    
-    '''
-    The recieved data is assumed to be a json that containes 3 distinct data types.
-        An array of 3-D points representing the nodes of the mesh to be triangluated.
-        An array of 2-D points representing line segments of the aforementioned 3-D points,
-            denoting the boundry regions of the mesh
-        An array of 3-D points used to denote which of the aforementioned boundry regions
-            are "holes". 
-    '''
-    
-    mesh_data = await lua_data.body()
-
-    mesh_str = mesh_data.decode('utf-8')
-    lua_tri_data = json.loads(mesh_str)
+def triangulate_and_save_results(tri_dict, db: Session):
     tri_data = {
-        'vertices': np.delete(lua_tri_data['vertices'], 2, 1),
-        'holes': np.delete(lua_tri_data['holes'], 2, 1),
-        'segments': lua_tri_data['segments']
+        'vertices': np.delete(tri_dict['vertices'], 2, 1),
+        'holes': np.delete(tri_dict['holes'], 2, 1),
+        'segments': tri_dict['segments']
     }
 
-    vertex_arr = np.array(lua_tri_data['vertices'])
+    vertex_arr = np.array(tri_dict['vertices'])
     print(vertex_arr)
 
     print(vertex_arr.shape)
@@ -84,12 +61,11 @@ async def save_triangle(lua_data: Request, db: Session=Depends(get_db)):
             point = point_arr[point_index]
             hieght = hieght_dict[(point[0], point[1])]
             point_with_hieght = np.append(point, hieght).tolist()
-            # triang.append(point_with_hieght)
             point_dict = dict(zip(point_dict_keys, point_with_hieght))
             point_dict['is_boundry'] = False
             point_dict['is_hole'] = False
             point_list.append(point_dict)
-        # return_data.append(triang)
+
         tri_init = {
             'mesh_id': 1,
             'level_id':1,
@@ -104,10 +80,48 @@ async def save_triangle(lua_data: Request, db: Session=Depends(get_db)):
     
     mesh_obj = Mesh(triangle_list, level_id=1)
     mesh_obj.save(db)      
-        
-    response = {
-        'msg':f'Mesh created with {len(triangle_list)} triagnles',
-        'mesh_id':mesh_obj.id
-    }
+
+    resp = LuaMeshRespone(num_triangels=len(triangle_list), mesh_id=mesh_obj.id)
+
+    return resp, mesh_obj
+
+
+@router.post("/triangulate_mesh_example/", response_model=LuaMeshRespone)
+async def gen_mesh_in_api(lua_data: LuaMeshGrid, db: Session=Depends(get_db)): 
+    '''
+    The recieved data is assumed to be a json that containes 3 distinct data types.
+        An array of 3-D points representing the nodes of the mesh to be triangluated.
+        An array of 2-D points representing line segments of the aforementioned 3-D points,
+            denoting the boundry regions of the mesh
+        An array of 3-D points used to denote which of the aforementioned boundry regions
+            are "holes". 
+    '''
+    
+    mesh_data = dict(lua_data)
+
+    # mesh_str = mesh_data.decode('utf-8')
+    # lua_tri_data = json.loads(mesh_data)
+    
+    response,_ = triangulate_and_save_results(mesh_data, db)
 
     return response
+
+@router.post("/triangulate_mesh_ingame/", response_model=MeshSchema)
+async def gen_mesh_ingame(lua_data: Request, db: Session=Depends(get_db)): 
+    '''
+    The recieved data is assumed to be a json that containes 3 distinct data types.
+        An array of 3-D points representing the nodes of the mesh to be triangluated.
+        An array of 2-D points representing line segments of the aforementioned 3-D points,
+            denoting the boundry regions of the mesh
+        An array of 3-D points used to denote which of the aforementioned boundry regions
+            are "holes". 
+    '''
+    
+    mesh_data = await lua_data.body()
+
+    mesh_str = mesh_data.decode('utf-8')
+    lua_tri_data = json.loads(mesh_str)
+    
+    _, mesh_obj = triangulate_and_save_results(lua_tri_data, db)
+
+    return mesh_obj
