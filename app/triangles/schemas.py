@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from pydantic import conlist
 from pydantic import BaseModel
 from app.points.schemas import Point, PointCreate

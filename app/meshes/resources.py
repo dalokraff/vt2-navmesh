@@ -1,6 +1,5 @@
 import json
 from fastapi import APIRouter, Depends, Request
-from typing import Union
 import numpy as np
 from sqlalchemy.orm import Session
 import triangle as tr
@@ -9,7 +8,7 @@ from app.utils.dependacny import get_db
 from app.triangles.models import Triangle
 from app.triangles.schemas import TriangleCreate
 from .models import Mesh
-from .schemas import LuaMeshRespone, Mesh as MeshSchema, MeshCreate, LuaMeshGrid
+from .schemas import LuaMeshRespone, Mesh as MeshSchema, LuaMeshGrid
 
 router = APIRouter(
     prefix="/meshes",

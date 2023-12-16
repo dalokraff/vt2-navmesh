@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.utils.dependacny import get_db
-from app.triangles.models import Triangle
 
 from .models import Point
 from .schemas import Point as p_schema, PointCreate

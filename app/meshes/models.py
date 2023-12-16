@@ -1,9 +1,9 @@
 from typing import List
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float
+from sqlalchemy import Column, Integer
 from sqlalchemy.orm import relationship, Session
 
 from app.database import Base
-from app.points.schemas import PointCreate, Point
+# from app.points.schemas import PointCreate, Point
 from app.triangles.models import Triangle
 from app.triangles.schemas import Triangle as tri_schema, TriangleCreate
 
