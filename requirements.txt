@@ -4,3 +4,4 @@ triangle==20230923
 matplotlib==3.8.2
 scipy==1.11.4
 requests==2.31.0
+SQLAlchemy==2.0.23

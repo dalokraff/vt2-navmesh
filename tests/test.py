@@ -5,6 +5,7 @@ Depends on how expansive the main app becomes.
 import matplotlib.pyplot as plt
 import numpy as np
 import triangle as tr
+import json
 
 # box = tr.get_data('box')
 
@@ -41,29 +42,38 @@ pts =[[-177.308  ,  79.0253],
  [-162.659  ,  79.3007],
  [-165.275  ,  79.2427]]
 
-segs = [[ 0.,  1.],
- [ 1.,  2.],
- [ 2.,  3.],
- [ 3.,  4.],
- [ 4.,  5.],
- [ 5.,  6.],
- [ 6.,  7.],
- [ 7.,  8.],
- [ 8.,  9.],
- [ 9., 10.],
- [11.,  0.],
- [12., 13.],
- [13., 14.],
+segs = [[ 0,  1],
+ [ 1,  2],
+ [ 2,  3],
+ [ 3,  4],
+ [ 4,  5],
+ [ 5,  6],
+ [ 6,  7],
+ [ 7,  8],
+ [ 8,  9],
+ [ 9, 10],
+ [11,  0],
+ [12, 13],
+ [13, 14],
  [14, 15],
- [15., 12.]]
+ [15, 12]]
 holes =[[-164.473 ,   81.1742]]
 
-rnd_segs = (np.round(segs)).astype(int)
+# rnd_segs = (np.round(segs)).astype(int)
 
-pnt_dicts = {'vertices':pts, 'segments': rnd_segs,'holes':holes}
+sample_data = '{"vertices":[[-0.93068152666092,42.904937744141,10.968893051147],[2.3840835094452,35.953079223633,10.913777351379],[-6.2436285018921,34.559043884277,10.938244819641],[-7.8259248733521,41.398212432861,10.968675613403],[-4.390908241272,38.853408813477,10.887317657471],[-1.9934171438217,39.217456817627,10.908308029175],[-1.1641374826431,37.46993637085,10.984676361084],[-4.2356686592102,36.457679748535,10.902195930481]],"holes":[[-2.6779396533966,37.937980651855,10.98713684082]],"segments":[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4]]}'
+tri_data = json.loads(sample_data)
+verts = np.array(tri_data['vertices'])
+res = np.delete(verts, 2, 1)
+print(verts[1])
+
+print(np.append(verts[1], 10))
+
+pnt_dicts = {'vertices':pts, 'segments': segs,'holes':holes}
+# print(pnt_dicts)
 t = tr.triangulate(pnt_dicts, 'p')
 
-print(t)
+# print(t)
 
 tr.compare(plt,pnt_dicts,t)
-plt.show()
+# plt.show()
