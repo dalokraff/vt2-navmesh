@@ -34,10 +34,10 @@ def get_meshes(db: Session=Depends(get_db)):
 def vector_to_hieght_dict(hieght_dict: dict, three_vec):
     hieght_dict[three_vec[:2]] = three_vec[2]
 
-@router.post("/triangulate_mesh/", response_model=MeshSchema)
+@router.post("/triangulate_mesh/")
 async def save_triangle(lua_data: Request, db: Session=Depends(get_db)):    
     '''
-    The recieved data is assumed to be a string that containes 3 distinct data types.
+    The recieved data is assumed to be a json that containes 3 distinct data types.
         An array of 3-D points representing the nodes of the mesh to be triangluated.
         An array of 2-D points representing line segments of the aforementioned 3-D points,
             denoting the boundry regions of the mesh
@@ -105,6 +105,9 @@ async def save_triangle(lua_data: Request, db: Session=Depends(get_db)):
     mesh_obj = Mesh(triangle_list, level_id=1)
     mesh_obj.save(db)      
         
-    print(return_data)
+    response = {
+        'msg':f'Mesh created with {len(triangle_list)} triagnles',
+        'mesh_id':mesh_obj.id
+    }
 
-    return mesh_obj
+    return response
