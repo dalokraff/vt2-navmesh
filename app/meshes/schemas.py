@@ -17,6 +17,7 @@ class Mesh(MeshBase):
     class Config:
         orm_mode = True
 
+# these LuaMeshes are for providing examples of hwo to structure the data when not in game using cjson.encode()
 class LuaMeshGrid(BaseModel):
     vertices: conlist(
                 conlist(float, min_length=3, max_length=3),
