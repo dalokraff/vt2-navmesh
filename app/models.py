@@ -25,16 +25,6 @@ class Item(Base):
 
     owner = relationship("User", back_populates="items")
 
-class Mesh(Base):
-    """
-    Used to associate a group of triangles that were created together
-    """
-    __tablename__ = "meshes"
-
-    id = Column(Integer, primary_key=True, index=True)
-    level_id = Column(Integer, ForeignKey("levels.id"))
-
-
 class Level(Base):
     __tablename__ = "levels"
 

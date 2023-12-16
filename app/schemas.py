@@ -36,25 +36,14 @@ class User(UserBase):
 
 ########################################################
 
-class MeshBase(BaseModel):
-    level_id: int
+# class LevelBase(BaseModel):
+#     name: str
+#     meshes: list[Mesh]
 
-class MeshCreate(MeshBase):
-    pass
+# class LevelCreate(LevelBase):
+#     pass
 
-class Mesh(BaseModel):
-    id: int
-    class Config:
-        orm_mode = True
-
-class LevelBase(BaseModel):
-    name: str
-    meshes: list[Mesh]
-
-class LevelCreate(LevelBase):
-    pass
-
-class Level(LevelBase):
-    id: int
-    class Config:
-        orm_mod = True
+# class Level(LevelBase):
+#     id: int
+#     class Config:
+#         orm_mod = True
