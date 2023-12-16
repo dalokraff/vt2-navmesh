@@ -1,8 +1,7 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float
-from sqlalchemy.orm import relationship, Session
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, Float
+from sqlalchemy.orm import Session
 
 from app.database import Base
-from app.utils.dependacny import get_db
 from app.points.schemas import PointCreate
 
 

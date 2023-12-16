@@ -1,8 +1,7 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float
+from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.orm import relationship, Session
 
 from app.database import Base
-import app.points.schemas as schemas
 from app.points.models import Point
 from app.points.schemas import PointCreate
 from app.triangles.schemas import TriangleCreate
@@ -21,7 +20,7 @@ class Triangle(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     points = relationship(Point, backref='points', uselist=True)
-    mesh_id = Column(Integer, index=True)
+    mesh_id = Column(Integer, ForeignKey("meshes.id"), nullable=True)
     level_id = Column(Integer, index=True)
 
     def __init__(self, tri_info: TriangleCreate):
@@ -40,12 +39,15 @@ class Triangle(Base):
         for point_obj in self.point_json:
             print(point_obj)
             print(*point_obj)
-            point = Point(
+            point_init = PointCreate(
                 x= point_obj.x,
                 y= point_obj.y,
                 z= point_obj.z,
                 is_hole= point_obj.is_hole,
                 is_boundry= point_obj.is_boundry,
+            )
+            point = Point(
+                point_init,
                 level_id= self.level_id, 
                 mesh_id= self.mesh_id,
                 triangle_id= self.id
